@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GradeDisplay } from "@/components/result/grade-display";
-import { DimensionChart } from "@/components/result/dimension-chart";
+import { ResultTabs } from "@/components/result/result-tabs";
 import { GradeDescription } from "@/components/result/grade-description";
 import { ShareButtons } from "@/components/result/share-buttons";
 import { Methodology } from "@/components/result/methodology";
@@ -20,7 +20,7 @@ function parseParams(params: { s?: string; d?: string }) {
   const dimensionString = params.d ?? "";
   const byDimension = decodeDimensions(dimensionString);
 
-  if (isNaN(score) || score < 0 || score > 60 || !byDimension) {
+  if (isNaN(score) || score < 0 || score > 100 || !byDimension) {
     return null;
   }
 
@@ -37,11 +37,11 @@ export async function generateMetadata({
   const gradeInfo = grades[parsed.grade];
 
   return {
-    title: `${gradeInfo.name} (${parsed.score}/60) — 니들이 AI를 알아?`,
+    title: `${gradeInfo.name} (${parsed.score}/100) — 니들이 AI를 알아?`,
     description: gradeInfo.description,
     openGraph: {
       title: `나는 "${gradeInfo.name}" — 니들이 AI를 알아?`,
-      description: `AI 활용도 테스트에서 ${parsed.score}/60점을 받았어요. 당신은?`,
+      description: `AI 활용도 테스트에서 ${parsed.score}/100점을 받았어요. 당신은?`,
       images: [
         {
           url: `/api/og?score=${parsed.score}&grade=${parsed.grade}&d=${params.d}`,
@@ -53,7 +53,7 @@ export async function generateMetadata({
     twitter: {
       card: "summary_large_image",
       title: `나는 "${gradeInfo.name}" — 니들이 AI를 알아?`,
-      description: `AI 활용도 테스트에서 ${parsed.score}/60점을 받았어요.`,
+      description: `AI 활용도 테스트에서 ${parsed.score}/100점을 받았어요.`,
       images: [`/api/og?score=${parsed.score}&grade=${parsed.grade}&d=${params.d}`],
     },
   };
@@ -75,7 +75,7 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
         <GradeDisplay score={score} grade={grade} />
 
         <div className="w-full">
-          <DimensionChart byDimension={byDimension} />
+          <ResultTabs byDimension={byDimension} />
         </div>
 
         <div className="w-full">

@@ -17,7 +17,7 @@ export function GradeDisplay({ score, grade }: GradeDisplayProps) {
         {gradeInfo.name}
       </h1>
       <p className="text-lg text-muted-foreground">
-        {score} / 60
+        {score} / 100
       </p>
     </div>
   );

@@ -15,12 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "니들이 AI를 알아?",
   description:
-    "AI를 얼마나 잘 쓰고 있는지 알아보세요. 10개 질문, 2분이면 끝.",
+    "AI를 얼마나 잘 쓰고 있는지 알아보세요. 30개 질문, 5분이면 끝.",
   metadataBase: new URL("https://howai.dev"),
   openGraph: {
     title: "니들이 AI를 알아?",
     description:
-      "AI를 얼마나 잘 쓰고 있는지 알아보세요. 10개 질문, 2분이면 끝.",
+      "AI를 얼마나 잘 쓰고 있는지 알아보세요. 30개 질문, 5분이면 끝.",
     siteName: "니들이 AI를 알아?",
     type: "website",
   },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "니들이 AI를 알아?",
     description:
-      "AI를 얼마나 잘 쓰고 있는지 알아보세요. 10개 질문, 2분이면 끝.",
+      "AI를 얼마나 잘 쓰고 있는지 알아보세요. 30개 질문, 5분이면 끝.",
   },
 };
 

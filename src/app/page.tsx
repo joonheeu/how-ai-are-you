@@ -19,7 +19,7 @@ export default function Home() {
           니들이 AI를 알아?
         </h1>
         <p className="text-lg text-muted-foreground">
-          10개 질문. 2분이면 끝.
+          30개 질문. 5분이면 끝.
           <br />
           나는 AI를 얼마나 잘 쓰고 있는지 알아보세요.
         </p>

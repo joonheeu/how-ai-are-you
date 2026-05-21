@@ -1,15 +1,32 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { questions } from "@/data/questions";
 import type { Dimension } from "@/lib/types";
-import { calculateScore, encodeDimensions, DIMENSIONS } from "@/lib/scoring";
+import { calculateScore, encodeDimensions, DIMENSIONS, DIMENSION_LABELS } from "@/lib/scoring";
 import { Progress } from "@/components/ui/progress";
 import { QuestionCard } from "./question-card";
 
 type Phase = "idle" | "exiting" | "entering";
 type Direction = "forward" | "backward";
+
+/** Build section metadata from question order */
+function buildSections(qs: typeof questions) {
+  const sections: { dimension: Dimension; startIndex: number; label: string }[] = [];
+  let prevDim: Dimension | null = null;
+  for (let i = 0; i < qs.length; i++) {
+    if (qs[i].dimension !== prevDim) {
+      sections.push({
+        dimension: qs[i].dimension,
+        startIndex: i,
+        label: DIMENSION_LABELS[qs[i].dimension],
+      });
+      prevDim = qs[i].dimension;
+    }
+  }
+  return sections;
+}
 
 export function QuizContainer() {
   const router = useRouter();
@@ -21,8 +38,21 @@ export function QuizContainer() {
   const [direction, setDirection] = useState<Direction>("forward");
   const lockRef = useRef(false);
 
+  const sections = useMemo(() => buildSections(questions), []);
+
   const question = questions[currentIndex];
   const progress = ((currentIndex + 1) / questions.length) * 100;
+
+  // Current section info
+  const currentSection = useMemo(() => {
+    let sectionIdx = 0;
+    for (let i = 0; i < sections.length; i++) {
+      if (currentIndex >= sections[i].startIndex) sectionIdx = i;
+    }
+    return { index: sectionIdx, ...sections[sectionIdx] };
+  }, [currentIndex, sections]);
+
+  const isFirstOfSection = sections.some((s) => s.startIndex === currentIndex);
 
   const transition = useCallback(
     (dir: Direction, nextIndex: number | "result", newAnswers?: (number | null)[]) => {
@@ -32,7 +62,6 @@ export function QuizContainer() {
       setDirection(dir);
       setPhase("exiting");
 
-      // Phase 1: exit (120ms)
       setTimeout(() => {
         if (nextIndex === "result") {
           const finalAnswers = newAnswers ?? answers;
@@ -49,14 +78,13 @@ export function QuizContainer() {
         setCurrentIndex(nextIndex);
         setPhase("entering");
 
-        // Phase 2: enter on next frame
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             setPhase("idle");
             lockRef.current = false;
           });
         });
-      }, 120);
+      }, 100);
     },
     [answers, router]
   );
@@ -69,7 +97,6 @@ export function QuizContainer() {
       newAnswers[currentIndex] = score;
       setAnswers(newAnswers);
 
-      // Brief selection feedback
       setTimeout(() => {
         if (currentIndex < questions.length - 1) {
           transition("forward", currentIndex + 1);
@@ -94,7 +121,6 @@ export function QuizContainer() {
         ? "opacity-0 -translate-x-6 transition-all duration-100 ease-in"
         : "opacity-0 translate-x-6 transition-all duration-100 ease-in";
   } else if (phase === "entering") {
-    // No transition — jump to start position instantly
     animClass =
       direction === "forward"
         ? "opacity-0 translate-x-6"
@@ -104,7 +130,18 @@ export function QuizContainer() {
   }
 
   return (
-    <div className="flex w-full max-w-lg flex-col gap-8">
+    <div className="flex w-full max-w-lg flex-col gap-6">
+      {/* Section header */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">
+          {currentSection.label}
+        </span>
+        <span className="text-xs text-muted-foreground/60">
+          ({currentSection.index + 1} / {sections.length})
+        </span>
+      </div>
+
+      {/* Progress */}
       <div className="flex flex-col gap-2">
         <span className="text-sm text-muted-foreground">
           {currentIndex + 1} / {questions.length}
@@ -112,6 +149,7 @@ export function QuizContainer() {
         <Progress value={progress} className="h-1.5" />
       </div>
 
+      {/* Question */}
       <div className={animClass}>
         <QuestionCard
           question={question}
@@ -120,6 +158,7 @@ export function QuizContainer() {
         />
       </div>
 
+      {/* Back button */}
       {currentIndex > 0 && (
         <div className="flex justify-center">
           <button

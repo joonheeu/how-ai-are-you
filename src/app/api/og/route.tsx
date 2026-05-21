@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
               color: "#666666",
             }}
           >
-            {score} / 60
+            {score} / 100
           </div>
         </div>
 

@@ -8,7 +8,7 @@ export function getResultUrl(score: number, dimensionString: string): string {
 
 export function getShareText(score: number, grade: 1 | 2 | 3 | 4 | 5): string {
   const gradeInfo = grades[grade];
-  return `나는 "${gradeInfo.name}" (${score}/60점). 니들이 AI를 알아?`;
+  return `나는 "${gradeInfo.name}" (${score}/100점). 니들이 AI를 알아?`;
 }
 
 export function getXShareUrl(score: number, grade: 1 | 2 | 3 | 4 | 5, dimensionString: string): string {
