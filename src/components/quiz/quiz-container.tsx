@@ -15,6 +15,7 @@ export function QuizContainer() {
     () => new Array(questions.length).fill(null)
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const lockRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const question = questions[currentIndex];
@@ -22,7 +23,9 @@ export function QuizContainer() {
 
   const handleSelect = useCallback(
     (score: number) => {
-      if (isTransitioning) return;
+      // Double guard: state + ref lock to prevent rapid clicks
+      if (isTransitioning || lockRef.current) return;
+      lockRef.current = true;
 
       const newAnswers = [...answers];
       newAnswers[currentIndex] = score;
@@ -36,8 +39,8 @@ export function QuizContainer() {
         if (currentIndex < questions.length - 1) {
           setCurrentIndex((prev) => prev + 1);
           setIsTransitioning(false);
+          lockRef.current = false;
         } else {
-          // Calculate and navigate to result
           const rawScores = {} as Record<Dimension, number>;
           for (const dim of DIMENSIONS) {
             rawScores[dim] = 0;
@@ -50,13 +53,13 @@ export function QuizContainer() {
           const dimensionString = encodeDimensions(result.byDimension);
           router.push(`/result?s=${result.total}&d=${dimensionString}`);
         }
-      }, 300);
+      }, 350);
     },
     [answers, currentIndex, isTransitioning, router]
   );
 
   const handleBack = useCallback(() => {
-    if (currentIndex > 0 && !isTransitioning) {
+    if (currentIndex > 0 && !isTransitioning && !lockRef.current) {
       setCurrentIndex((prev) => prev - 1);
     }
   }, [currentIndex, isTransitioning]);
@@ -64,20 +67,9 @@ export function QuizContainer() {
   return (
     <div className="flex w-full max-w-lg flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            {currentIndex + 1} / {questions.length}
-          </span>
-          {currentIndex > 0 && (
-            <button
-              type="button"
-              onClick={handleBack}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              이전
-            </button>
-          )}
-        </div>
+        <span className="text-sm text-muted-foreground">
+          {currentIndex + 1} / {questions.length}
+        </span>
         <Progress value={progress} className="h-1.5" />
       </div>
 
@@ -94,6 +86,19 @@ export function QuizContainer() {
           onSelect={handleSelect}
         />
       </div>
+
+      {currentIndex > 0 && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={handleBack}
+            disabled={isTransitioning}
+            className="text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground disabled:opacity-50 disabled:no-underline"
+          >
+            이전 질문으로
+          </button>
+        </div>
+      )}
     </div>
   );
 }
