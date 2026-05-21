@@ -92,12 +92,20 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
             grade={grade}
             dimensionString={dimensionString}
           />
-          <Link
-            href="/quiz"
-            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-          >
-            다시 테스트하기
-          </Link>
+          <div className="flex gap-3">
+            <Link
+              href="/quiz"
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+            >
+              다시 테스트하기
+            </Link>
+            <Link
+              href="/levels"
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+            >
+              전체 등급 보기
+            </Link>
+          </div>
         </div>
       </div>
     </main>
