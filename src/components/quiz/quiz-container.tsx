@@ -2,11 +2,13 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { questions } from "@/lib/questions";
-import type { Dimension } from "@/lib/questions";
+import { questions } from "@/data/questions";
+import type { Dimension } from "@/lib/types";
 import { calculateScore, encodeDimensions, DIMENSIONS } from "@/lib/scoring";
 import { Progress } from "@/components/ui/progress";
 import { QuestionCard } from "./question-card";
+
+type Direction = "forward" | "backward";
 
 export function QuizContainer() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export function QuizContainer() {
     () => new Array(questions.length).fill(null)
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [direction, setDirection] = useState<Direction>("forward");
   const lockRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -23,7 +26,6 @@ export function QuizContainer() {
 
   const handleSelect = useCallback(
     (score: number) => {
-      // Double guard: state + ref lock to prevent rapid clicks
       if (isTransitioning || lockRef.current) return;
       lockRef.current = true;
 
@@ -31,6 +33,7 @@ export function QuizContainer() {
       newAnswers[currentIndex] = score;
       setAnswers(newAnswers);
 
+      setDirection("forward");
       setIsTransitioning(true);
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -60,9 +63,27 @@ export function QuizContainer() {
 
   const handleBack = useCallback(() => {
     if (currentIndex > 0 && !isTransitioning && !lockRef.current) {
-      setCurrentIndex((prev) => prev - 1);
+      lockRef.current = true;
+      setDirection("backward");
+      setIsTransitioning(true);
+
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev - 1);
+        setIsTransitioning(false);
+        lockRef.current = false;
+      }, 200);
     }
   }, [currentIndex, isTransitioning]);
+
+  const exitClass =
+    direction === "forward"
+      ? "opacity-0 -translate-x-8"
+      : "opacity-0 translate-x-8";
+
+  const enterClass =
+    direction === "forward"
+      ? "opacity-0 translate-x-8"
+      : "opacity-0 -translate-x-8";
 
   return (
     <div className="flex w-full max-w-lg flex-col gap-8">
@@ -74,11 +95,9 @@ export function QuizContainer() {
       </div>
 
       <div
-        className={
-          isTransitioning
-            ? "opacity-0 translate-y-2 transition-all duration-200"
-            : "opacity-100 translate-y-0 transition-all duration-200"
-        }
+        className={`transition-all duration-200 ease-in-out ${
+          isTransitioning ? exitClass : "opacity-100 translate-x-0"
+        }`}
       >
         <QuestionCard
           question={question}

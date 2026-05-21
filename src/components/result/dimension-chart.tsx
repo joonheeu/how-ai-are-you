@@ -1,5 +1,10 @@
-import type { Dimension } from "@/lib/questions";
-import { DIMENSIONS, DIMENSION_LABELS, getDimensionMax } from "@/lib/scoring";
+import type { Dimension } from "@/lib/types";
+import {
+  DIMENSIONS,
+  DIMENSION_LABELS,
+  DIMENSION_DESCRIPTIONS,
+  getDimensionMax,
+} from "@/lib/scoring";
 
 interface DimensionChartProps {
   byDimension: Record<Dimension, number>;
@@ -23,7 +28,7 @@ function getPercentageLabel(percentage: number): string {
 
 export function DimensionChart({ byDimension }: DimensionChartProps) {
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-5">
       {DIMENSIONS.map((dim) => {
         const value = byDimension[dim];
         const max = getDimensionMax(dim);
@@ -32,12 +37,17 @@ export function DimensionChart({ byDimension }: DimensionChartProps) {
         const label = getPercentageLabel(percentage);
 
         return (
-          <div key={dim} className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-foreground">
-                {DIMENSION_LABELS[dim]}
-              </span>
-              <span className="text-xs text-muted-foreground">
+          <div key={dim} className="flex flex-col gap-1">
+            <div className="flex items-baseline justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-foreground">
+                  {DIMENSION_LABELS[dim]}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {DIMENSION_DESCRIPTIONS[dim]}
+                </span>
+              </div>
+              <span className="shrink-0 text-xs text-muted-foreground">
                 {label} · {Math.round(percentage)}%
               </span>
             </div>

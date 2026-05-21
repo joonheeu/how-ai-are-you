@@ -1,40 +1,33 @@
-import type { Dimension } from "./questions";
+import type { Dimension } from "./types";
+import { dimensionMetas } from "@/data/dimensions";
 
-export const DIMENSION_WEIGHTS: Record<Dimension, number> = {
-  frequency: 1.0,
-  breadth: 1.0,
-  depth: 1.5,
-  toolStack: 1.0,
-  investment: 1.0,
-  integration: 1.5,
-};
+export const DIMENSIONS: Dimension[] = dimensionMetas.map((d) => d.key);
 
-export const DIMENSION_LABELS: Record<Dimension, string> = {
-  frequency: "사용 빈도",
-  breadth: "활용 범위",
-  depth: "활용 깊이",
-  toolStack: "도구 다양성",
-  investment: "투자 수준",
-  integration: "워크플로우 통합",
-};
+export const DIMENSION_WEIGHTS: Record<Dimension, number> =
+  Object.fromEntries(dimensionMetas.map((d) => [d.key, d.weight])) as Record<
+    Dimension,
+    number
+  >;
 
-export const DIMENSIONS: Dimension[] = [
-  "frequency",
-  "breadth",
-  "depth",
-  "toolStack",
-  "investment",
-  "integration",
-];
+export const DIMENSION_LABELS: Record<Dimension, string> =
+  Object.fromEntries(dimensionMetas.map((d) => [d.key, d.label])) as Record<
+    Dimension,
+    string
+  >;
+
+export const DIMENSION_DESCRIPTIONS: Record<Dimension, string> =
+  Object.fromEntries(
+    dimensionMetas.map((d) => [d.key, d.description])
+  ) as Record<Dimension, string>;
 
 /** Max raw score per dimension (sum of max option scores across questions) */
 const DIMENSION_MAX_RAW: Record<Dimension, number> = {
-  frequency: 10, // Q1(5) + Q2(5)
-  breadth: 5, // Q3(5)
-  depth: 10, // Q4(5) + Q5(5)
-  toolStack: 10, // Q6(5) + Q7(5)
-  investment: 5, // Q8(5)
-  integration: 10, // Q9(5) + Q10(5)
+  frequency: 10,
+  breadth: 5,
+  depth: 10,
+  toolStack: 10,
+  investment: 5,
+  integration: 10,
 };
 
 export function getDimensionMax(dimension: Dimension): number {
@@ -74,12 +67,12 @@ export function getGrade(total: number): 1 | 2 | 3 | 4 | 5 {
   return 5;
 }
 
-/** Encode dimension scores as comma-separated string for URL */
-export function encodeDimensions(byDimension: Record<Dimension, number>): string {
+export function encodeDimensions(
+  byDimension: Record<Dimension, number>
+): string {
   return DIMENSIONS.map((d) => byDimension[d]).join(",");
 }
 
-/** Decode dimension scores from comma-separated string */
 export function decodeDimensions(
   encoded: string
 ): Record<Dimension, number> | null {

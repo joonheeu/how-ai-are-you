@@ -7,6 +7,7 @@ import { GradeDisplay } from "@/components/result/grade-display";
 import { DimensionChart } from "@/components/result/dimension-chart";
 import { GradeDescription } from "@/components/result/grade-description";
 import { ShareButtons } from "@/components/result/share-buttons";
+import { Methodology } from "@/components/result/methodology";
 import { getGrade, decodeDimensions } from "@/lib/scoring";
 import { grades } from "@/lib/grades";
 
@@ -79,6 +80,10 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
 
         <div className="w-full">
           <GradeDescription grade={grade} />
+        </div>
+
+        <div className="w-full">
+          <Methodology />
         </div>
 
         <div className="flex flex-col items-center gap-4">
