@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import type { Dimension } from "@/lib/types";
 import { DIMENSIONS, DIMENSION_LABELS, getDimensionMax } from "@/lib/scoring";
 
@@ -11,7 +14,6 @@ const RADIUS = 110;
 const LEVELS = 4;
 
 function polarToCartesian(angle: number, radius: number) {
-  // Start from top (-90°), go clockwise
   const rad = ((angle - 90) * Math.PI) / 180;
   return {
     x: CENTER + radius * Math.cos(rad),
@@ -30,13 +32,22 @@ function getPolygonPoints(values: number[], maxRadius: number): string {
 }
 
 export function RadarChart({ byDimension }: RadarChartProps) {
+  const [animated, setAnimated] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimated(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const step = 360 / DIMENSIONS.length;
 
-  // Normalized values (0~1) for each dimension
   const values = DIMENSIONS.map((dim) => {
     const max = getDimensionMax(dim);
     return max > 0 ? byDimension[dim] / max : 0;
   });
+
+  const animatedValues = animated ? values : values.map(() => 0);
 
   // Grid rings
   const rings = Array.from({ length: LEVELS }, (_, i) => {
@@ -56,18 +67,19 @@ export function RadarChart({ byDimension }: RadarChartProps) {
 
   // Labels
   const labels = DIMENSIONS.map((dim, i) => {
-    const pos = polarToCartesian(i * step, RADIUS + 24);
-    return { dim, x: pos.x, y: pos.y, label: DIMENSION_LABELS[dim] };
+    const pos = polarToCartesian(i * step, RADIUS + 28);
+    const pct = Math.round(values[i] * 100);
+    return { dim, x: pos.x, y: pos.y, label: DIMENSION_LABELS[dim], pct };
   });
 
   // Data polygon
-  const dataPoints = getPolygonPoints(values, RADIUS);
+  const dataPoints = getPolygonPoints(animatedValues, RADIUS);
 
   return (
     <div className="flex w-full justify-center">
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="w-full max-w-[280px]"
+        className="w-full max-w-[300px]"
         role="img"
         aria-label="AI 활용도 레이더 차트"
       >
@@ -97,41 +109,75 @@ export function RadarChart({ byDimension }: RadarChartProps) {
           />
         ))}
 
-        {/* Data area */}
+        {/* Data area with transition */}
         <polygon
           points={dataPoints}
           className="fill-sky-500/20 stroke-sky-500"
           strokeWidth="2"
           strokeLinejoin="round"
+          style={{ transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
         />
 
         {/* Data points */}
-        {values.map((v, i) => {
+        {animatedValues.map((v, i) => {
           const pos = polarToCartesian(i * step, v * RADIUS);
+          const isHovered = hoveredIndex === i;
           return (
             <circle
               key={i}
               cx={pos.x}
               cy={pos.y}
-              r="3.5"
-              className="fill-sky-500"
+              r={isHovered ? 6 : 4}
+              className={isHovered ? "fill-sky-600" : "fill-sky-500"}
+              style={{
+                transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), r 0.15s ease",
+              }}
             />
           );
         })}
 
-        {/* Labels */}
-        {labels.map(({ dim, x, y, label }) => (
-          <text
-            key={dim}
-            x={x}
-            y={y}
-            textAnchor="middle"
-            dominantBaseline="central"
-            className="fill-muted-foreground text-[9px]"
-          >
-            {label}
-          </text>
-        ))}
+        {/* Interactive hit areas + labels */}
+        {labels.map(({ dim, x, y, label, pct }, i) => {
+          const isHovered = hoveredIndex === i;
+          return (
+            <g
+              key={dim}
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              className="cursor-pointer"
+            >
+              {/* Invisible hit area */}
+              <circle
+                cx={x}
+                cy={y}
+                r="20"
+                fill="transparent"
+              />
+              <text
+                x={x}
+                y={y - 6}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className={`text-[9px] transition-colors ${
+                  isHovered ? "fill-foreground font-medium" : "fill-muted-foreground"
+                }`}
+              >
+                {label}
+              </text>
+              <text
+                x={x}
+                y={y + 6}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className={`text-[10px] font-semibold transition-all ${
+                  isHovered ? "fill-sky-600" : "fill-muted-foreground/60"
+                }`}
+              >
+                {pct}%
+              </text>
+            </g>
+          );
+        })}
       </svg>
     </div>
   );
