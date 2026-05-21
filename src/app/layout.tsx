@@ -16,7 +16,11 @@ export const metadata: Metadata = {
   title: "니들이 AI를 알아?",
   description:
     "AI를 얼마나 잘 쓰고 있는지 알아보세요. 30개 질문, 5분이면 끝.",
-  metadataBase: new URL("https://howai.dev"),
+  metadataBase: new URL(
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : "https://how-ai-are-you.vercel.app"
+  ),
   openGraph: {
     title: "니들이 AI를 알아?",
     description:

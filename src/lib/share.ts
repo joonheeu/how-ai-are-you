@@ -1,6 +1,6 @@
 import { grades } from "./grades";
 
-const BASE_URL = "https://howai.dev";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://how-ai-are-you.vercel.app";
 
 export function getResultUrl(score: number, dimensionString: string): string {
   return `${BASE_URL}/result?s=${score}&d=${dimensionString}`;
