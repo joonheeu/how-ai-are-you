@@ -8,6 +8,7 @@ import { calculateScore, encodeDimensions, DIMENSIONS } from "@/lib/scoring";
 import { Progress } from "@/components/ui/progress";
 import { QuestionCard } from "./question-card";
 
+type Phase = "idle" | "exiting" | "entering";
 type Direction = "forward" | "backward";
 
 export function QuizContainer() {
@@ -16,74 +17,91 @@ export function QuizContainer() {
   const [answers, setAnswers] = useState<(number | null)[]>(
     () => new Array(questions.length).fill(null)
   );
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [direction, setDirection] = useState<Direction>("forward");
   const lockRef = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const question = questions[currentIndex];
   const progress = ((currentIndex + 1) / questions.length) * 100;
 
+  const transition = useCallback(
+    (dir: Direction, nextIndex: number | "result", newAnswers?: (number | null)[]) => {
+      if (lockRef.current) return;
+      lockRef.current = true;
+
+      setDirection(dir);
+      setPhase("exiting");
+
+      // Phase 1: exit (120ms)
+      setTimeout(() => {
+        if (nextIndex === "result") {
+          const finalAnswers = newAnswers ?? answers;
+          const rawScores = {} as Record<Dimension, number>;
+          for (const dim of DIMENSIONS) rawScores[dim] = 0;
+          questions.forEach((q, i) => {
+            rawScores[q.dimension] += finalAnswers[i] ?? 0;
+          });
+          const result = calculateScore(rawScores);
+          router.push(`/result?s=${result.total}&d=${encodeDimensions(result.byDimension)}`);
+          return;
+        }
+
+        setCurrentIndex(nextIndex);
+        setPhase("entering");
+
+        // Phase 2: enter on next frame
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setPhase("idle");
+            lockRef.current = false;
+          });
+        });
+      }, 120);
+    },
+    [answers, router]
+  );
+
   const handleSelect = useCallback(
     (score: number) => {
-      if (isTransitioning || lockRef.current) return;
-      lockRef.current = true;
+      if (phase !== "idle" || lockRef.current) return;
 
       const newAnswers = [...answers];
       newAnswers[currentIndex] = score;
       setAnswers(newAnswers);
 
-      setDirection("forward");
-      setIsTransitioning(true);
-
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-      timeoutRef.current = setTimeout(() => {
+      // Brief selection feedback
+      setTimeout(() => {
         if (currentIndex < questions.length - 1) {
-          setCurrentIndex((prev) => prev + 1);
-          setIsTransitioning(false);
-          lockRef.current = false;
+          transition("forward", currentIndex + 1);
         } else {
-          const rawScores = {} as Record<Dimension, number>;
-          for (const dim of DIMENSIONS) {
-            rawScores[dim] = 0;
-          }
-          questions.forEach((q, i) => {
-            rawScores[q.dimension] += newAnswers[i] ?? 0;
-          });
-
-          const result = calculateScore(rawScores);
-          const dimensionString = encodeDimensions(result.byDimension);
-          router.push(`/result?s=${result.total}&d=${dimensionString}`);
+          transition("forward", "result", newAnswers);
         }
-      }, 350);
+      }, 80);
     },
-    [answers, currentIndex, isTransitioning, router]
+    [answers, currentIndex, phase, transition]
   );
 
   const handleBack = useCallback(() => {
-    if (currentIndex > 0 && !isTransitioning && !lockRef.current) {
-      lockRef.current = true;
-      setDirection("backward");
-      setIsTransitioning(true);
-
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev - 1);
-        setIsTransitioning(false);
-        lockRef.current = false;
-      }, 200);
+    if (currentIndex > 0 && phase === "idle") {
+      transition("backward", currentIndex - 1);
     }
-  }, [currentIndex, isTransitioning]);
+  }, [currentIndex, phase, transition]);
 
-  const exitClass =
-    direction === "forward"
-      ? "opacity-0 -translate-x-8"
-      : "opacity-0 translate-x-8";
-
-  const enterClass =
-    direction === "forward"
-      ? "opacity-0 translate-x-8"
-      : "opacity-0 -translate-x-8";
+  let animClass: string;
+  if (phase === "exiting") {
+    animClass =
+      direction === "forward"
+        ? "opacity-0 -translate-x-6 transition-all duration-100 ease-in"
+        : "opacity-0 translate-x-6 transition-all duration-100 ease-in";
+  } else if (phase === "entering") {
+    // No transition — jump to start position instantly
+    animClass =
+      direction === "forward"
+        ? "opacity-0 translate-x-6"
+        : "opacity-0 -translate-x-6";
+  } else {
+    animClass = "opacity-100 translate-x-0 transition-all duration-150 ease-out";
+  }
 
   return (
     <div className="flex w-full max-w-lg flex-col gap-8">
@@ -94,11 +112,7 @@ export function QuizContainer() {
         <Progress value={progress} className="h-1.5" />
       </div>
 
-      <div
-        className={`transition-all duration-200 ease-in-out ${
-          isTransitioning ? exitClass : "opacity-100 translate-x-0"
-        }`}
-      >
+      <div className={animClass}>
         <QuestionCard
           question={question}
           selectedScore={answers[currentIndex]}
@@ -111,7 +125,7 @@ export function QuizContainer() {
           <button
             type="button"
             onClick={handleBack}
-            disabled={isTransitioning}
+            disabled={phase !== "idle"}
             className="text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground disabled:opacity-50 disabled:no-underline"
           >
             이전 질문으로
