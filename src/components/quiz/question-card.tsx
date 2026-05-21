@@ -41,9 +41,9 @@ export function QuestionCard({
         {question.text}
       </h2>
       <div className="flex flex-col gap-2">
-        {shuffledOptions.map((option) => (
+        {shuffledOptions.map((option, idx) => (
           <OptionButton
-            key={option.score}
+            key={`${question.id}-${idx}`}
             label={option.label}
             selected={selectedScore === option.score}
             onClick={() => onSelect(option.score)}
